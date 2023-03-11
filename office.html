@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+
+<meta name="viewport" content="width = device-width, user-scalable = no, minimum-scale = 0.5, maximum-scale = 1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+<title>The CEO's Office of Goblin Garage Studios, LLC</title>
+
+<link href="includes/style-min.css" rel="stylesheet" />
+<link href="http://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet" />
+
+<link rel="shortcut icon" href="favicon.ico">
+<!-- <link rel="apple-touch-icon" href="apple-touch-icon.png" /> -->
+
+<script src="includes/game-min.js" lang="javascript"></script>
+<script src="includes/modernizr.js" lang="javascript"></script>
+</head>
+	
+<body>
+<section id="marquee">
+	<header>
+		<h1 id="logo">Goblin Garage Studios, LLC</h1>
+
+		<nav id="nav">
+			<div id="navHome" alt="The Front Desk" title="The Front Desk"><a href="main.html">Home</a></div>
+			<div id="navGames" alt="The Lab" title="The Lab"><a href="games.html">Games</a></div>
+			<div id="navAbout" alt="The Gallery" title="The Gallery"><a href="about.html">About</a></div>
+			<div id="navArchive" alt="The Archives" title="The Archives"><a href="archive.html"></a></div>
+			<div id="navElevator"><a href="elevator.html"></a></div>
+			<div id="navOffice" class="current"><div id="navArrow"></div></div>
+		</nav>
+
+		<div id="location">The CEO's Office</div>
+
+		<div id="infoBox">
+			<p style="font-weight:bold; text-decoration:underline;">To Move:</p>
+			<p>Left click at your desired location.</p>
+			<p style="font-weight:bold; text-decoration:underline;">To Interact:</p>
+			<p>Left click on the person or object.</p>
+		</div>
+	</header>
+
+	<div id="gameControls">
+		<div id="info" onclick="toggleVisibility('infoBox');" alt="Instructions for the game" title="Instructions for the game"></div>
+		<div id="min_max" onclick="toggleMode();" alt="Minimize the game" title="Minimize the game"></div>
+		<!-- <div id="restart" alt="Restart the game" title="Restart the game"></div> -->
+	</div>
+</section>
+
+<section id="posts">
+	<article>
+	</article>
+</section>
+
+<footer>
+	<section id="copyright">
+		<a rel="license" style="border-width: 0;" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a><br />
+		A Tale of Two Goblins is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.
+	</section>
+</footer>
+
+<section id="game">
+	<div id="landscape"></div>
+	<div id="rain"></div>
+	<div id="glass"></div>
+	<div id="blinds"></div>
+	<div id="floorRef"></div>
+	<div id="floorBlinds"></div>
+
+	<div id="gameArea">
+		<canvas id="pSprite" width="64" height="192"></canvas>
+		<canvas id="pDialogue" width="600" height="19"></canvas>
+		
+		<div id="title">A Tale of Two Goblins v0.5</div>
+	</div>
+</section>
+
+<script>init("The Office");</script>
+</body>
+</html>

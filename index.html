@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width = device-width, user-scalable = no, minimum-scale = 0.5, maximum-scale = 1.0" />
+
+<title>Goblin Garage Studios, LLC</title>
+
+<link href="http://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet" />
+<style>
+html{width:100%;height:100%;min-width:640px;min-height:400px;}
+html, body, canvas, #gameBox, #game, #rain, #flash, #landscape, #glass, #title{margin:0;padding:0;}
+#rain, #flash, #landscape, #glass{position:absolute;top:125px;left:245px;width:150px;height:150px;}
+canvas {display:block;-webkit-transform:scale3d(1, 1, 1);-moz-transform:scale3d(1, 1, 1);-o-transform:scale3d(1, 1, 1);-ms-transform:scale3d(1, 1, 1);transform:scale3d(1, 1, 1);}
+body {position:relative;width:100%;min-width:640px;height:100%;min-height:400px;font-family:"Press Start 2P", sans-serif;font-size:16px;color:#fff;background:#000;}
+#gameBox {position:absolute;top:50%;left:0;width:100%;height:400px;margin-top:-200px;}
+#game {position:relative;width:640px;height:400px;margin:0 auto;}
+#title {position:absolute;bottom:20px;right:20px;text-align:right;}
+#rain {-webkit-animation-name:rainAnim;-webkit-animation-iteration-count:infinite;-webkit-animation-duration:0.3s;-webkit-animation-timing-function:linear;-moz-animation-name:rainAnim;-moz-animation-iteration-count:infinite;-moz-animation-duration:0.3s;-moz-animation-timing-function:linear;background:transparent url("images/rain.png");}
+#landscape{background:transparent url("images/landscape.png") repeat-x;background-position:center bottom;}
+#glass{background:transparent url("images/p_glass_broken.png");background-position:center bottom;}
+#pSprite {position:absolute;top:198px;left:0;z-index:20;}
+#dialogue {position:absolute;top:0;left:0;width:640px;height:125px;text-align:center;line-height:2;}
+@-webkit-keyframes rainAnim{0% {background-position:0 -64px;} 100% {background-position:0 0;}}
+@-moz-keyframes rainAnim{0% {background-position:0 -64px;} 100% {background-position:0 0;}}
+@-ms-keyframes rainAnim{0% {background-position:0 -64px;} 100% {background-position:0 0;}}
+@-o-keyframes rainAnim{0% {background-position:0 -64px;} 100% {background-position:0 0;}}
+keyframes rainAnim{0% {background-position:0 -64px;} 100% {background-position:0 0;}}
+a {text-decoration:none;color:#0f0;}
+</style>
+
+<script lang="javascript" type="text/javascript">
+// ----- Global Variables ----- //
+var dTimeOut;
+var dTimer = 3000;
+var dCount = 0;
+var d = ["Case:<br />The Master Goblin", "Homicide Status:<br />TBD", "Summary:<br />Victim fell out 40th floor window.", "Victim Status:<br />...", "Wait...", "Alive?!", "The man survived a 40 story drop in downtown?", "Nuts!", "This is going to be messy!"];
+
+var bgY = -64;
+var bgLastFrame = +new Date;
+
+var flashLastFrame = +new Date;
+var flashCountGap = Math.floor((Math.random()*10000)+5000);
+var flashed = false;
+
+var loadCount = 0;
+var loadCountMax = 100;
+
+var isiOS = navigator.userAgent.indexOf("iPhone") != -1 || navigator.userAgent.indexOf("iPad") != -1 || navigator.userAgent.indexOf("iPod") != -1;
+
+// ----- Global Sprite Variables / Objects ----- //
+
+// Player
+var player = {
+    	element:		null,
+    	context:		null,
+    	img:			new Image(),
+    	isSpeaking:		false,
+    	moveDistance:	16,
+		w:				64,
+		h:				96,
+		sx:				0,
+		sy:				192,
+		faceRight:		true,
+		faceBack:		false,
+		counter:		0,
+		endStep:		6,
+		loc:			0,
+		lastFrame:		+new Date,
+		start: {
+			rightX:		0,
+			backX:		192,
+			y:			192
+			}
+		};
+
+// ------------------------------------------------------------------------------------------ //
+
+// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+
+// requestAnimationFrame polyfill by Erik Möller
+// fixes from Paul Irish and Tino Zijdel
+
+(function() {
+	var lastTime = 0, vendors = ['ms', 'moz', 'webkit', 'o'];
+	for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+		window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+		window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
+	}
+ 
+	if (!window.requestAnimationFrame)
+		window.requestAnimationFrame = function(callback, element) {
+			var currTime = new Date().getTime(), timeToCall = Math.max(0, 16 - (currTime - lastTime));
+			var id = window.setTimeout(function() { callback(currTime + timeToCall); },timeToCall);
+			lastTime = currTime + timeToCall;
+			return id;
+		};
+ 
+	if (!window.cancelAnimationFrame) window.cancelAnimationFrame = function(id) {clearTimeout(id);};}());
+
+if (!Date.now) {  
+	Date.now = function now() {  
+		return +(new Date);  
+	};  
+}
+
+// ------------------------------------------------------------------------------------------ //
+
+function drawDialogueText() {
+	if (dCount == 4) {
+		player.isSpeaking = true;
+	}
+
+	if (dCount >= 9) {
+		clearTimeout(dTimeOut);
+
+		player.isSpeaking = false;
+		document.getElementById("dialogue").innerHTML = "<a href=\"main.html\">Contine...</a>";
+	} else {
+		clearTimeout(dTimeOut);
+	
+		document.getElementById("dialogue").innerHTML = d[dCount];
+
+		dTimeOut = setTimeout("drawDialogueText()", dTimer);
+
+		dCount++;
+	}
+}
+
+function animateSprite(sObj, cycle) {
+	var yPos = cycle * 96;
+
+	if (sObj.counter >= sObj.endStep) {
+		sObj.sx = 0;
+		sObj.counter = 0;
+	} else {
+		if (sObj.sy == sObj.start.y) {
+			sObj.sx = 0;
+		} else if (sObj.sy == yPos) {
+			sObj.sx += sObj.w;
+		}
+
+		sObj.sy = yPos;
+	}
+
+	sObj.counter++;
+}
+
+function reset() {
+	player.sy = player.start.y;
+	player.counter = 0;
+
+	renderSprite(player);
+}
+
+function renderSprite(sObj) {
+	sObj.context.clearRect(0, 0, sObj.w, sObj.h);
+	sObj.context.drawImage(sObj.img, sObj.sx, sObj.sy, sObj.w, sObj.h, 0, 0, sObj.w, sObj.h);
+
+	sObj.lastFrame = Date.now();
+}
+
+function drawPSprite() {
+	if (player.loc < 288) {
+		animateSprite(player, 0);
+
+		player.loc += player.moveDistance;
+		player.element.style.left = player.loc + "px";
+	} else if (!player.isSpeaking) {
+		if (player.faceBack) {
+			player.sx = player.start.backX;
+		} else {
+			player.sx = player.start.rightX;
+		}
+		
+		reset();
+	}
+
+	if (player.isSpeaking) {
+		animateSprite(player, 6);
+	} 
+	
+	renderSprite(player);
+}
+
+function update() {
+	requestAnimationFrame(update);
+
+	var now = Date.now();
+	var deltaTime = now - player.lastFrame;
+	var flashDeltaTime = now - flashLastFrame;
+	var bgDeltaTime = now - bgLastFrame;
+
+	if (flashDeltaTime >= flashCountGap && !flashed) {
+		document.getElementById("flash").style.background = "#ddd";
+
+		flashCountGap = Math.floor((Math.random()*10000)+5000);
+
+		flashed = true;
+		
+		flashLastFrame = now;
+	} else if (flashed && flashDeltaTime >= 250) {
+		document.getElementById("flash").style.background = "transparent";
+
+		flashed = false;
+	}
+
+	if (loadCount >= loadCountMax) {
+		player.context.globalAlpha = 1;
+		player.faceRight = false;
+		player.faceBack = true;
+	} else {
+		loadCount++;
+
+		player.context.globalAlpha = loadCount / 100;
+	}
+	
+	if (deltaTime >= 167){drawPSprite();}
+
+	if (!Modernizr.cssanimations) {
+		if (bgDeltaTime >= 18){
+			bgY += 4;
+
+			if (bgY > 0) {
+				bgY = -64;
+			}
+	
+			document.getElementById("rain").style.backgroundPosition = "0px " + bgY +"px";
+		}
+	}
+}
+
+function init() {
+	if (Modernizr.canvas && Modernizr.canvastext) {
+		player.element = document.getElementById("pSprite");
+		player.context = player.element.getContext("2d");
+		player.img.src = "images/p_detective_ss.png";
+
+		player.img.onload = function() {requestAnimationFrame(update);lastFrame = Date.now();drawDialogueText();}
+
+		if (isiOS) {
+			window.addEventListener("orientationchange", hideAddressBar, false);
+
+			if(!window.pageYOffset) {hideAddressBar();}
+		}
+	}
+}
+
+function hideAddressBar() {
+	if(!window.location.hash) {
+		if(document.height < window.outerHeight) {document.body.style.height = (window.outerHeight + 50) + 'px';}
+
+		setTimeout(function(){window.scrollTo(0, 1);}, 50);
+	}
+}
+
+/* Modernizr 2.5.3 (Custom Build) | MIT & BSD
+ * Build: http://www.modernizr.com/download/#-cssanimations-canvas-canvastext-shiv-cssclasses-testprop-testallprops-domprefixes-load
+ */
+;window.Modernizr=function(a,b,c){function x(a){j.cssText=a}function y(a,b){return x(prefixes.join(a+";")+(b||""))}function z(a,b){return typeof a===b}function A(a,b){return!!~(""+a).indexOf(b)}function B(a,b){for(var d in a)if(j[a[d]]!==c)return b=="pfx"?a[d]:!0;return!1}function C(a,b,d){for(var e in a){var f=b[a[e]];if(f!==c)return d===!1?a[e]:z(f,"function")?f.bind(d||b):f}return!1}function D(a,b,c){var d=a.charAt(0).toUpperCase()+a.substr(1),e=(a+" "+n.join(d+" ")+d).split(" ");return z(b,"string")||z(b,"undefined")?B(e,b):(e=(a+" "+o.join(d+" ")+d).split(" "),C(e,b,c))}var d="2.5.3",e={},f=!0,g=b.documentElement,h="modernizr",i=b.createElement(h),j=i.style,k,l={}.toString,m="Webkit Moz O ms",n=m.split(" "),o=m.toLowerCase().split(" "),p={},q={},r={},s=[],t=s.slice,u,v={}.hasOwnProperty,w;!z(v,"undefined")&&!z(v.call,"undefined")?w=function(a,b){return v.call(a,b)}:w=function(a,b){return b in a&&z(a.constructor.prototype[b],"undefined")},Function.prototype.bind||(Function.prototype.bind=function(b){var c=this;if(typeof c!="function")throw new TypeError;var d=t.call(arguments,1),e=function(){if(this instanceof e){var a=function(){};a.prototype=c.prototype;var f=new a,g=c.apply(f,d.concat(t.call(arguments)));return Object(g)===g?g:f}return c.apply(b,d.concat(t.call(arguments)))};return e}),p.canvas=function(){var a=b.createElement("canvas");return!!a.getContext&&!!a.getContext("2d")},p.canvastext=function(){return!!e.canvas&&!!z(b.createElement("canvas").getContext("2d").fillText,"function")},p.cssanimations=function(){return D("animationName")};for(var E in p)w(p,E)&&(u=E.toLowerCase(),e[u]=p[E](),s.push((e[u]?"":"no-")+u));return x(""),i=k=null,function(a,b){function g(a,b){var c=a.createElement("p"),d=a.getElementsByTagName("head")[0]||a.documentElement;return c.innerHTML="x<style>"+b+"</style>",d.insertBefore(c.lastChild,d.firstChild)}function h(){var a=k.elements;return typeof a=="string"?a.split(" "):a}function i(a){var b={},c=a.createElement,e=a.createDocumentFragment,f=e();a.createElement=function(a){var e=(b[a]||(b[a]=c(a))).cloneNode();return k.shivMethods&&e.canHaveChildren&&!d.test(a)?f.appendChild(e):e},a.createDocumentFragment=Function("h,f","return function(){var n=f.cloneNode(),c=n.createElement;h.shivMethods&&("+h().join().replace(/\w+/g,function(a){return b[a]=c(a),f.createElement(a),'c("'+a+'")'})+");return n}")(k,f)}function j(a){var b;return a.documentShived?a:(k.shivCSS&&!e&&(b=!!g(a,"article,aside,details,figcaption,figure,footer,header,hgroup,nav,section{display:block}audio{display:none}canvas,video{display:inline-block;*display:inline;*zoom:1}[hidden]{display:none}audio[controls]{display:inline-block;*display:inline;*zoom:1}mark{background:#FF0;color:#000}")),f||(b=!i(a)),b&&(a.documentShived=b),a)}var c=a.html5||{},d=/^<|^(?:button|form|map|select|textarea)$/i,e,f;(function(){var a=b.createElement("a");a.innerHTML="<xyz></xyz>",e="hidden"in a,f=a.childNodes.length==1||function(){try{b.createElement("a")}catch(a){return!0}var c=b.createDocumentFragment();return typeof c.cloneNode=="undefined"||typeof c.createDocumentFragment=="undefined"||typeof c.createElement=="undefined"}()})();var k={elements:c.elements||"abbr article aside audio bdi canvas data datalist details figcaption figure footer header hgroup mark meter nav output progress section summary time video",shivCSS:c.shivCSS!==!1,shivMethods:c.shivMethods!==!1,type:"default",shivDocument:j};a.html5=k,j(b)}(this,b),e._version=d,e._domPrefixes=o,e._cssomPrefixes=n,e.testProp=function(a){return B([a])},e.testAllProps=D,g.className=g.className.replace(/(^|\s)no-js(\s|$)/,"$1$2")+(f?" js "+s.join(" "):""),e}(this,this.document),function(a,b,c){function d(a){return o.call(a)=="[object Function]"}function e(a){return typeof a=="string"}function f(){}function g(a){return!a||a=="loaded"||a=="complete"||a=="uninitialized"}function h(){var a=p.shift();q=1,a?a.t?m(function(){(a.t=="c"?B.injectCss:B.injectJs)(a.s,0,a.a,a.x,a.e,1)},0):(a(),h()):q=0}function i(a,c,d,e,f,i,j){function k(b){if(!o&&g(l.readyState)&&(u.r=o=1,!q&&h(),l.onload=l.onreadystatechange=null,b)){a!="img"&&m(function(){t.removeChild(l)},50);for(var d in y[c])y[c].hasOwnProperty(d)&&y[c][d].onload()}}var j=j||B.errorTimeout,l={},o=0,r=0,u={t:d,s:c,e:f,a:i,x:j};y[c]===1&&(r=1,y[c]=[],l=b.createElement(a)),a=="object"?l.data=c:(l.src=c,l.type=a),l.width=l.height="0",l.onerror=l.onload=l.onreadystatechange=function(){k.call(this,r)},p.splice(e,0,u),a!="img"&&(r||y[c]===2?(t.insertBefore(l,s?null:n),m(k,j)):y[c].push(l))}function j(a,b,c,d,f){return q=0,b=b||"j",e(a)?i(b=="c"?v:u,a,b,this.i++,c,d,f):(p.splice(this.i++,0,a),p.length==1&&h()),this}function k(){var a=B;return a.loader={load:j,i:0},a}var l=b.documentElement,m=a.setTimeout,n=b.getElementsByTagName("script")[0],o={}.toString,p=[],q=0,r="MozAppearance"in l.style,s=r&&!!b.createRange().compareNode,t=s?l:n.parentNode,l=a.opera&&o.call(a.opera)=="[object Opera]",l=!!b.attachEvent&&!l,u=r?"object":l?"script":"img",v=l?"script":u,w=Array.isArray||function(a){return o.call(a)=="[object Array]"},x=[],y={},z={timeout:function(a,b){return b.length&&(a.timeout=b[0]),a}},A,B;B=function(a){function b(a){var a=a.split("!"),b=x.length,c=a.pop(),d=a.length,c={url:c,origUrl:c,prefixes:a},e,f,g;for(f=0;f<d;f++)g=a[f].split("="),(e=z[g.shift()])&&(c=e(c,g));for(f=0;f<b;f++)c=x[f](c);return c}function g(a,e,f,g,i){var j=b(a),l=j.autoCallback;j.url.split(".").pop().split("?").shift(),j.bypass||(e&&(e=d(e)?e:e[a]||e[g]||e[a.split("/").pop().split("?")[0]]||h),j.instead?j.instead(a,e,f,g,i):(y[j.url]?j.noexec=!0:y[j.url]=1,f.load(j.url,j.forceCSS||!j.forceJS&&"css"==j.url.split(".").pop().split("?").shift()?"c":c,j.noexec,j.attrs,j.timeout),(d(e)||d(l))&&f.load(function(){k(),e&&e(j.origUrl,i,g),l&&l(j.origUrl,i,g),y[j.url]=2})))}function i(a,b){function c(a,c){if(a){if(e(a))c||(j=function(){var a=[].slice.call(arguments);k.apply(this,a),l()}),g(a,j,b,0,h);else if(Object(a)===a)for(n in m=function(){var b=0,c;for(c in a)a.hasOwnProperty(c)&&b++;return b}(),a)a.hasOwnProperty(n)&&(!c&&!--m&&(d(j)?j=function(){var a=[].slice.call(arguments);k.apply(this,a),l()}:j[n]=function(a){return function(){var b=[].slice.call(arguments);a&&a.apply(this,b),l()}}(k[n])),g(a[n],j,b,n,h))}else!c&&l()}var h=!!a.test,i=a.load||a.both,j=a.callback||f,k=j,l=a.complete||f,m,n;c(h?a.yep:a.nope,!!i),i&&c(i)}var j,l,m=this.yepnope.loader;if(e(a))g(a,0,m,0);else if(w(a))for(j=0;j<a.length;j++)l=a[j],e(l)?g(l,0,m,0):w(l)?B(l):Object(l)===l&&i(l,m);else Object(a)===a&&i(a,m)},B.addPrefix=function(a,b){z[a]=b},B.addFilter=function(a){x.push(a)},B.errorTimeout=1e4,b.readyState==null&&b.addEventListener&&(b.readyState="loading",b.addEventListener("DOMContentLoaded",A=function(){b.removeEventListener("DOMContentLoaded",A,0),b.readyState="complete"},0)),a.yepnope=k(),a.yepnope.executeStack=h,a.yepnope.injectJs=function(a,c,d,e,i,j){var k=b.createElement("script"),l,o,e=e||B.errorTimeout;k.src=a;for(o in d)k.setAttribute(o,d[o]);c=j?h:c||f,k.onreadystatechange=k.onload=function(){!l&&g(k.readyState)&&(l=1,c(),k.onload=k.onreadystatechange=null)},m(function(){l||(l=1,c(1))},e),i?k.onload():n.parentNode.insertBefore(k,n)},a.yepnope.injectCss=function(a,c,d,e,g,i){var e=b.createElement("link"),j,c=i?h:c||f;e.href=a,e.rel="stylesheet",e.type="text/css";for(j in d)e.setAttribute(j,d[j]);g||(n.parentNode.insertBefore(e,n),m(c,0))}}(this,document),Modernizr.load=function(){yepnope.apply(window,[].slice.call(arguments,0))};
+</script>
+</head>
+
+<body>
+<div id="gameBox">
+	<div id="game">
+		<div id="landscape"></div>
+		<div id="rain"></div>
+		<div id="flash"></div>
+		<div id="glass"></div>
+
+		<div id="dialogue" width="640" height="125"><a href="main.html">Contine...</a></div>
+		
+		<div id="title">A Tale of Two Goblins</div>
+
+		<canvas id="pSprite" width="64" height="96"></canvas>
+	</div>
+</div>
+
+<script>init();</script>
+</body>
+</html>
